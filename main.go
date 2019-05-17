@@ -110,12 +110,25 @@ func (c *Client) write() {
     }
 }
 
+func determineListenAddress() (string, error){
+	port := os.Getenv("PORT")
+		if port == "" {
+			return ":8080", nil
+		}
+		return ":" + port, nil
+ }
+
 func main() {
+	addr, err := determineListenAddress()
+	if err != nil {
+		log.Fatal(err)
+	}
+
     fmt.Println("Starting application...")
 	go manager.start()
 	http.HandleFunc("/", serveHome)
     http.HandleFunc("/ws", wsPage)
-    http.ListenAndServe(":8080", nil)
+    http.ListenAndServe(addr, nil)
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
