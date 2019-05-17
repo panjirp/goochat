@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/satori/go.uuid"
-	_"log"
+	"log"
+	"os"
 )
 
 type ClientManager struct {
