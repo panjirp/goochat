@@ -1,0 +1,17 @@
+{
+	"ImportPath": "chat",
+	"GoVersion": "go1.12",
+	"GodepVersion": "v80",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Comment": "v1.4.0-10-g0ec3d1b",
+			"Rev": "0ec3d1bd7fe50c503d6df98ee649d81f4857c564"
+		},
+		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Comment": "v1.2.0-12-gb2ce238",
+			"Rev": "b2ce2384e17bbe0c6d34077efa39dbab3e09123b"
+		}
+	]
+}
