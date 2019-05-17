@@ -64,7 +64,7 @@
 
             app.container = document.querySelector('.container')
 
-            app.ws = new WebSocket("ws://" + document.location.host + "/ws?username=" + name)
+            app.ws = new WebSocket("wss://" + document.location.host + "/ws?username=" + name)
     
             app.ws.onopen = function() {
                 var message = '<b>me</b>: connected'
