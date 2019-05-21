@@ -2,7 +2,9 @@
 <html>
 <head>
     <title>WebSocket</title>
-
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
     <style type="text/css">
        .form {
             position: fixed;
@@ -13,6 +15,7 @@
             border-top: 1px solid #78b8ef;
             padding: 5px 10px;
         }
+
         .form .placeholder, .form .input-message, .form button {
             display: block;
             margin-bottom: 5px;
@@ -31,9 +34,40 @@
             background-color: #78b8ef;
             border: 1px solid #5a9ed8;
         }
+
+        .form2 {
+            position: relative;
+            background-color: #f9f9f9;
+            border-top: 1px solid #78b8ef;
+            padding: 5px 10px;
+        }
+
+        .form2 .placeholder, .form .input-message, .form button {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form2 .input-personal-message {
+            padding: 7px;
+            border: 1px solid #ecebeb;
+            border-radius: 4px;
+            width: -webkit-fill-available;
+        }
+        .form2 button {
+            width: 100%;
+            color: white;
+            padding: 7px 10px;
+            border-radius: 4px;
+            background-color: #78b8ef;
+            border: 1px solid #5a9ed8;
+        }
+
         .container { margin-bottom: 50px; }
         .container p { display: block; }
+
+        .container2 { margin-bottom: 50px; }
+        .container2 p { display: block; }
     </style>
+    
 </head>
 <body>
     <div class="container"></div>
@@ -48,10 +82,43 @@
         </form>
     </div>
 
+                <!-- Modal -->
+                    <div id="modal" class="modal fade" role="dialog">
+                        <div class="modal-dialog modal-lg">
+                    
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title" id="titlepersonal"></h4>
+                            </div>
+                            <div class="modal-body">
+                                    <div class="container2"></div>
+                                    <div class="form2">
+                                    <form onsubmit="app.doSendPersonalMessage(); return false;">
+                                            <div class="placeholder">
+                                                <label>Hello <b class="username"></b>. Say something:</label>
+                                            </div>
+                                            <input type="hidden" id="recipientId">
+                                            <input class="input-personal-message" id="pm" type="text" placeholder="Enter message">
+                                            <button type="submit">Send</button>
+                                        </form>
+                                    </div>
+                            </div>
+                            <!-- <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div> -->
+                        </div>
+                    
+                        </div>
+                    </div>
+                <!-- end modal -->
+
     <script type="text/javascript">
         var app = {}
         app.ws = undefined
         app.container = undefined
+        app.container2 = undefined
 
         app.init = function () {
             if (!(window.WebSocket)) {
@@ -63,12 +130,13 @@
             document.querySelector('.username').innerText = name
 
             app.container = document.querySelector('.container')
+            app.container2 = document.querySelector('.container2')
 
             app.ws = new WebSocket("wss://" + document.location.host + "/ws?username=" + name)
     
             app.ws.onopen = function() {
-                var message = '<b>me</b>: connected'
-                app.print(message)
+                var message = ' : connected'
+                app.print(message, 'me', '')
             }
 
             app.ws.onmessage = function (event) {
@@ -78,28 +146,47 @@
                 var messsage = ''
                 
                 if (res.type === 'New') {
-                    message = 'User <b>' + res.sender + '</b>: connected'
+                    message = ' : connected'
+                    app.print(message, res.sender, res.sender_id)
                 } else if (res.type === 'Leave') {
-                    message = 'User <b>' + res.sender + '</b>: disconnected'
-                } else if(res.type === 'Msg' && res.sender != name){
+                    message = ' : disconnected'
+                    app.print(message, res.sender, res.sender_id)
+                } else if(res.type === 'Broadcast' && res.sender != name){
                     var msg = JSON.parse(res.content)
-                    message = '<b>' + res.sender + '</b>: ' + msg.Message
+                    message = ' : ' + msg.Message
+                    app.print(message, res.sender, res.sender_id)
+                } else if(res.type === 'Personal'){
+                    var msg = JSON.parse(res.content)
+                    message = ' : ' + msg.Message
+                    $('#titlepersonal').html('personal chat to '+res.sender)
+                    $('#recipientId').val(res.sender_id) 
+                    $('#modal').modal({'backdrop': 'static'})
+                    app.printPersonal(message, res.sender, res.sender_id)
                 }else{
                     message = ''
                 }
 
-                app.print(message)
+                
             }
 
             app.ws.onclose = function () {
-                var message = '<b>me</b>: disconnected'
-                app.print(message)
+                var message = ' : disconnected'
+                app.print(message, 'me', '')
             }
 
-            app.print = function (message) {
-                var el = document.createElement("p")
-                el.innerHTML = message
+            app.print = function (message, user, id) {
+                var el = document.createElement("div")
+                var link = document.createElement("a")
+                link.setAttribute("class","pc")
+                link.href = "#"
+                link.innerText = user;
+                el.appendChild(link)
+               
+                el.innerHTML += message
                 app.container.append(el)
+                $('.pc').click(function(){
+                    chatUser(user, id)
+                })
             }
 
             app.doSendMessage = function () {
@@ -108,10 +195,42 @@
                     Message: messageRaw
                 }));
 
-                var message = '<b>me</b>: ' + messageRaw
-                app.print(message)
+                var message = ' : ' + messageRaw
+                app.print(message, 'me', '')
 
                 document.querySelector('.input-message').value = ''
+            }
+
+            function chatUser(user, id) {
+                // alert(user)
+                if (user != 'me'){
+                    $('#titlepersonal').html('personal chat to '+user)
+                    $('#recipientId').val(id) 
+                    $('#modal').modal({'backdrop': 'static'})
+                    // var el2 = document.createElement("p")
+                    // el2.innerHTML = 'test'
+                    // app.container2.append(el2)
+                }
+            }
+
+            app.doSendPersonalMessage = function () {
+                var messageRaw = $('#pm').val()
+                var recipientId = $('#recipientId').val()
+                app.ws.send(JSON.stringify({
+                    Recipient : recipientId,
+                    Message: messageRaw
+                }));
+
+                var message = ' : ' + messageRaw
+                app.printPersonal(message, 'me')
+
+                $('#pm').val('')
+            }
+
+            app.printPersonal = function (message, user) {
+                var el = document.createElement("p")
+                el.innerHTML = user + message
+                app.container2.append(el)
             }
         }
 
